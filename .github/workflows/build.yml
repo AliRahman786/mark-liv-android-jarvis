@@ -17,16 +17,30 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-        cache: gradle
+        # Removed the cache line that was causing the red cross
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
 
     - name: Build Debug APK
-      run: ./gradlew assembleDebug
+      run: |
+        # Find where the gradlew file is, in case Jules put it in a subfolder
+        if [ -f gradlew ]; then
+          chmod +x gradlew
+          ./gradlew assembleDebug
+        elif [ -f app/gradlew ]; then
+          cd app
+          chmod +x gradlew
+          ./gradlew assembleDebug
+        else
+          # Fallback to standard gradle if gradlew is completely missing
+          gradle assembleDebug
+        fi
 
     - name: Upload Debug APK
       uses: actions/upload-artifact@v4
       with:
         name: jarvis-debug-apk
-        path: app/build/outputs/apk/debug/app-debug.apk
+        # This will search for the APK no matter what folder Jules put it in
+        path: '**/build/outputs/apk/debug/app-debug.apk'
+
